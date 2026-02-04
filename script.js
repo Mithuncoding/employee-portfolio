@@ -156,10 +156,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. GSAP ANIMATIONS
     initGSAP();
 
-    // 5. REMOVE PRELOADER
-    setTimeout(() => {
-        document.body.classList.add('loaded');
-    }, 1500); // Fake load time for effect
+    // 5. ENHANCED PRELOADER
+    const loaderPercent = document.querySelector('.loader-percent');
+    const loaderProgress = document.querySelector('.loader-progress');
+    const loaderText = document.querySelector('.loader-text');
+    
+    // Status messages for "Cyberpunk" feel
+    const statusMessages = [
+        "INITIALIZING CORE...",
+        "LOADING 3D ASSETS...",
+        "CONNECTING TO NEURAL NET...",
+        "CALIBRATING OPTICS...",
+        "SYNCHRONIZING DATA...",
+        "SYSTEM ONLINE"
+    ];
+
+    let progress = 0;
+    const totalDuration = 2000; // 2 seconds total load time
+    const intervalTime = 20; // Update every 20ms
+    const increment = (100 / (totalDuration / intervalTime)); 
+
+    const loaderInterval = setInterval(() => {
+        progress += increment;
+        
+        // Randomize progress slightly for realism
+        if(Math.random() > 0.8) progress += 2;
+        
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(loaderInterval);
+            
+            // Final state
+            if(loaderPercent) loaderPercent.textContent = "100%";
+            if(loaderProgress) loaderProgress.style.width = "100%";
+            if(loaderText) loaderText.textContent = "SYSTEM READY";
+            
+            // Exit animation
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+            }, 500);
+        } else {
+            // Update UI
+            if(loaderPercent) loaderPercent.textContent = Math.floor(progress) + "%";
+            if(loaderProgress) loaderProgress.style.width = progress + "%";
+            
+            // Cycle status text
+            if(Math.floor(progress) % 20 === 0 && Math.floor(progress) < 90) {
+                const msgIndex = (Math.floor(progress) / 20) % statusMessages.length;
+                if(loaderText) loaderText.textContent = statusMessages[msgIndex];
+            }
+        }
+    }, intervalTime);
 
     // 6. FIREBASE CONTACT FORM
     // PASTE YOUR FIREBASE CONFIG HERE FROM THE CONSOLE
