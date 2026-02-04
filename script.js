@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. INIT SMOOTH SCROLL (LENIS)
     // ... (Rest of existing code)
     let lenis;
-    if (typeof Lenis !== 'undefined') {
+    if (typeof Lenis !== 'undefined' && window.innerWidth > 768) {
         lenis = new Lenis({
             duration: 1.2,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),

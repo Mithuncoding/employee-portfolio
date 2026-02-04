@@ -4,6 +4,10 @@
    ============================================ */
 
 /* CSS Reset & Variables */
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+}
 :root {
     --bg-color: #050505;
     --text-color: #ffffff;
