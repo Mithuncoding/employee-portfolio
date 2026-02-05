@@ -129,17 +129,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const cursorDot = document.querySelector('.cursor-dot');
     const cursorOutline = document.querySelector('.cursor-outline');
 
-    window.addEventListener('mousemove', (e) => {
-        const posX = e.clientX;
-        const posY = e.clientY;
+    // Only run cursor logic on desktop
+    if (window.matchMedia("(pointer: fine)").matches) {
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
 
-        // Dot follows instantly
-        cursorDot.style.transform = `translate(-50%, -50%) translate(${posX}px, ${posY}px)`;
+            // Dot follows instantly
+            cursorDot.style.transform = `translate(-50%, -50%) translate(${posX}px, ${posY}px)`;
 
-        // Outline follows with lag (handled by CSS transition for simple effect, 
-        // or we can use GSAP for smoother lag)
-        cursorOutline.style.transform = `translate(-50%, -50%) translate(${posX}px, ${posY}px)`;
-    });
+            // Outline follows with lag
+            cursorOutline.style.transform = `translate(-50%, -50%) translate(${posX}px, ${posY}px)`;
+        });
+    }
 
     // Cursor Hover Effects
     const hoverables = document.querySelectorAll('a, button, .project-card');
@@ -322,7 +324,9 @@ function initThreeJS() {
     container.appendChild(renderer.domElement);
 
     // Geometry - "The Brain/Core"
-    const geometry = new THREE.IcosahedronGeometry(2, 64); // Highly detailed
+    // Reduce detail on mobile for performance
+    const detail = window.innerWidth < 768 ? 16 : 64;
+    const geometry = new THREE.IcosahedronGeometry(2, detail);
     
     // Material - Wireframe style for "Tech" look
     const material = new THREE.MeshBasicMaterial({

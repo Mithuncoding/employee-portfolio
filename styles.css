@@ -311,9 +311,7 @@ body.loaded .preloader {
     mix-blend-mode: difference;
 }
 
-.hero-text .line {
-    /* overflow: hidden; */ /* Removing for GSAP splitting if needed, but safe to keep off */
-}
+
 
 .hero-text .outline {
     -webkit-text-stroke: 1px white;
@@ -520,6 +518,7 @@ body.loaded .preloader {
     margin-bottom: 40px;
     background: linear-gradient(90deg, #fff, #999);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -848,36 +847,7 @@ body.loaded .preloader {
     }
 }
 
-@media (max-width: 768px) {
-    .contact-layout {
-        grid-template-columns: 1fr;
-        gap: 60px;
-    }
-    
-    .huge-text {
-        font-size: 4rem; /* Still big */
-        margin-bottom: 30px;
-    }
-    
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .social-grid {
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
-    
-    .contact-container {
-        padding: 40px 20px;
-    }
-    
-    .footer-minimal {
-        flex-direction: column;
-        gap: 10px;
-        align-items: center;
-    }
-}
+
 .project-img {
     position: absolute;
     top: 0;
@@ -898,63 +868,158 @@ body.loaded .preloader {
 /* ==================
    RESPONSIVE (ULTIMATE MOBILE)
    ================== */
-@media (max-width: 768px) {
-    .nav { 
-        padding: 20px; 
+/* ============================================
+   MOBILE RESPONSIVENESS (COMPREHENSIVE)
+   ============================================ */
+@media screen and (max-width: 768px) {
+    
+    :root {
+        --container-width: 100%;
+    }
+
+    /* 1. GLOBAL & NAV */
+    body {
+        cursor: auto; /* Restore default cursor */
+    }
+
+    .cursor {
+        display: none !important; /* Hide custom cursor */
+    }
+
+    .nav {
+        padding: 20px;
         background: rgba(0,0,0,0.8);
         backdrop-filter: blur(10px);
     }
-    .nav-right { display: none; } /* Keeping it simple for now, or could add hamburger */
     
-    .hero-section { padding: 0 20px; }
-    .hero-text { font-size: 3rem; }
-    
-    /* V3 MOBILE LAYOUT: VERTICAL STACK */
-    .work-section {
-        height: auto !important; /* Reset pinned height */
-        padding-bottom: 50px;
+    .nav-left { font-size: 1rem; }
+    .nav-right { gap: 15px; } /* Improved tap target spacing */
+    .nav-link { font-size: 0.8rem; }
+
+    /* 2. HERO SECTION */
+    .hero-section {
+        padding: 0 20px;
+        min-height: 80vh;
+        padding-top: 100px;
+    }
+
+    .hero-text {
+        font-size: 14vw; 
     }
     
+    .hero-sub {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 30px;
+        font-size: 0.85rem;
+    }
+
+    .scroll-prompt { bottom: 20px; }
+
+    /* 3. WORK SECTION (VERTICAL STACK) */
+    .work-section {
+        padding-top: 50px;
+        height: auto !important; /* Override sticky height */
+    }
+
     .work-container {
         height: auto !important;
         overflow: visible;
     }
-    
-    .horizontal-scroll-wrapper {
-        display: block; /* Stack vertically */
+
+    h2 { font-size: 2.5rem !important; } /* Global header fix */
+
+    .work-header {
+        padding: 0 20px;
+        margin-bottom: 30px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
-    
+
+    .horizontal-scroll-wrapper {
+        display: block; 
+    }
+
     .horizontal-track {
         display: flex;
-        flex-direction: column; /* Stack cards */
-        width: 100%;
-        padding: 0 20px;
+        flex-direction: column;
         gap: 60px;
-        transform: none !important; /* Disable GSAP translate */
+        padding: 0 20px 50px 20px;
+        width: 100%;
+        transform: none !important; 
     }
-    
-    .project-item {
-        width: 100%; /* Full width cards */
+
+    .project-item { width: 100%; }
+
+    .project-img-wrapper { height: 250px; }
+
+    /* 4. ABOUT SECTION */
+    .about-section { padding: 80px 20px; }
+
+    .about-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        margin-bottom: 60px;
+        grid-template-columns: 1fr;
     }
-    
-    .project-img-wrapper {
-        height: 250px;
+
+    .about-left h2 {
+        position: static;
+        margin-bottom: 20px;
+        font-size: 1.8rem;
     }
-    
-    .about-grid { grid-template-columns: 1fr; }
-    .about-left h2 { position: static; margin-bottom: 20px; }
-    
-    .stats-row { 
-        flex-direction: row; 
+
+    .about-right .lead { font-size: 1.8rem; }
+    .about-right .desc { font-size: 1rem; }
+
+    .stats-row {
+        gap: 30px;
         flex-wrap: wrap; 
-        gap: 20px; 
+        justify-content: space-between;
     }
     
-    .stat-box { flex: 1; }
+    .stat-box { flex: 1 1 40%; }
     
-    .contact-header h2 { font-size: 3rem; }
-    .contact-links { align-items: flex-start; }
-    .magnetic-btn { font-size: 1.5rem; }
+    .awards-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+    
+    .award-box { padding: 20px !important; }
+    
+    /* 5. CONTACT SECTION */
+    .contact-container { padding: 60px 20px; }
+    
+    .contact-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 60px;
+        grid-template-columns: 1fr;
+    }
+    
+    .huge-text {
+        font-size: 18vw;
+        margin-bottom: 30px;
+    }
+    
+    .form-row { grid-template-columns: 1fr; }
+    
+    .social-grid {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .footer-minimal {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* 6. UTILS */
+    .noise-overlay { opacity: 0.15; }
 }
 
 /* ==================
