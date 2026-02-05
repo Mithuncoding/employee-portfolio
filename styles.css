@@ -142,6 +142,74 @@ body.hovered .cursor-outline {
 }
 
 /* ==================
+   PAGE TRANSITION
+   ================== */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 99999;
+    transform: scaleY(0);
+    transform-origin: bottom;
+    pointer-events: none;
+}
+
+/* ==================
+   TEXT ANIMATIONS
+   ================== */
+.char {
+    display: inline-block; /* Required for transform */
+}
+
+.reveal-text {
+    /* Base class for JS selection */
+    visibility: hidden; /* Hide until split */
+}
+
+/* ==================
+   MAGNETIC BUTTON ENHANCEMENTS
+   ================== */
+.magnetic-cta {
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.magnetic-cta::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%; 
+    height: 150%;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transform-origin: center;
+    transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: -1;
+}
+
+.magnetic-cta:hover {
+    color: black !important;
+    background: transparent; /* Override previous */
+    transform: none; /* JS handles this */
+}
+
+.magnetic-cta:hover::after {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.magnetic-cta:hover .btn-icon {
+    /* Ensure icon color swaps too if not handled by cascade */
+    color: black;
+}
+
+
+/* ==================
    PRELOADER
    ================== */
 /* ==================

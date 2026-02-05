@@ -158,7 +158,158 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. GSAP ANIMATIONS
     initGSAP();
 
-    // 5. ENHANCED PRELOADER
+
+    // 5. ENHANCED PRELOADER (Wrapped in function for clarity)
+    initPreloader();
+
+    // 6. FIREBASE & OTHERS
+    initFirebase();
+    initClock();
+
+    // 8. NEW: MAGIC MAGNETIC BUTTONS
+    initMagneticButtons();
+
+    // 9. NEW: TEXT MICRO-ANIMATIONS
+    initTextAnimations();
+
+    // 10. NEW: PAGE TRANSITIONS
+    initPageTransitions();
+
+});
+
+// ... (Existing Functions) ...
+
+// ============================================
+// 8. MAGIC MAGNETIC BUTTONS
+// ============================================
+function initMagneticButtons() {
+    // Disable on mobile for UX
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+
+    const magnets = document.querySelectorAll('.magnetic-cta, .nav-link, .view-btn');
+    
+    magnets.forEach((magnet) => {
+        magnet.addEventListener('mousemove', (e) => {
+            const rect = magnet.getBoundingClientRect();
+            // Calculate center relative to viewport
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            // Distance from center
+            const x = e.clientX - centerX;
+            const y = e.clientY - centerY;
+            
+            // Move the button itself slightly towards tracking (Magnetic pull)
+            gsap.to(magnet, {
+                x: x * 0.2, // Strength of pull
+                y: y * 0.2,
+                duration: 0.5,
+                ease: "power3.out"
+            });
+
+            // Move the text/icon inside even more for parallax depth
+            const content = magnet.querySelector('span, .btn-text, .btn-icon');
+            if(content) {
+                gsap.to(content, {
+                    x: x * 0.1,
+                    y: y * 0.1,
+                    duration: 0.5,
+                    ease: "power3.out"
+                });
+            }
+        });
+
+        magnet.addEventListener('mouseleave', () => {
+            gsap.to(magnet, {
+                x: 0,
+                y: 0,
+                duration: 1,
+                ease: "elastic.out(1, 0.3)"
+            });
+            const content = magnet.querySelector('span, .btn-text, .btn-icon');
+            if(content) {
+                gsap.to(content, {
+                    x: 0,
+                    y: 0,
+                    duration: 1,
+                    ease: "elastic.out(1, 0.3)"
+                });
+            }
+        });
+    });
+}
+
+// ============================================
+// 9. TEXT MICRO-ANIMATIONS
+// ============================================
+function initTextAnimations() {
+    // Only run if SplitType is loaded
+    if(typeof SplitType === 'undefined') return;
+
+    // Select headings to animate
+    const splitTargets = document.querySelectorAll('.hero-text, h2');
+    
+    splitTargets.forEach(target => {
+        // Split text
+        const split = new SplitType(target, { types: 'chars, words' });
+        
+        // Remove visibility: hidden from CSS now that we are ready
+        target.classList.remove('reveal-text');
+        
+        // Animate chars
+        gsap.from(split.chars, {
+            scrollTrigger: {
+                trigger: target,
+                start: 'top 80%',
+                toggleActions: 'play none none reverse'
+            },
+            y: 100,
+            opacity: 0,
+            stagger: 0.02,
+            duration: 1,
+            ease: 'power4.out'
+        });
+    });
+}
+
+// ============================================
+// 10. PAGE TRANSITIONS
+// ============================================
+function initPageTransitions() {
+    const overlay = document.querySelector('.transition-overlay');
+    const links = document.querySelectorAll('a:not([href^="#"]):not([target="_blank"])'); // Internal links only
+
+    // Initial Load Reveal
+    if(overlay) {
+        gsap.to(overlay, {
+            scaleY: 0,
+            duration: 1.2,
+            ease: "power4.inOut",
+            delay: 0.2
+        });
+    }
+
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = link.getAttribute('href');
+
+            // Animate Overlay In
+            gsap.to(overlay, {
+                scaleY: 1,
+                transformOrigin: 'bottom',
+                duration: 0.8,
+                ease: "power4.inOut",
+                onComplete: () => {
+                    window.location.href = href;
+                }
+            });
+        });
+    });
+}
+
+// Helper Wrappers for existing code to keep file clean
+function initPreloader() {
     const loaderPercent = document.querySelector('.loader-percent');
     const loaderProgress = document.querySelector('.loader-progress');
     const loaderText = document.querySelector('.loader-text');
@@ -174,14 +325,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     let progress = 0;
-    const totalDuration = 2000; // 2 seconds total load time
-    const intervalTime = 20; // Update every 20ms
+    const totalDuration = 2000; 
+    const intervalTime = 20; 
     const increment = (100 / (totalDuration / intervalTime)); 
 
     const loaderInterval = setInterval(() => {
         progress += increment;
         
-        // Randomize progress slightly for realism
+        // Randomize progress slightly
         if(Math.random() > 0.8) progress += 2;
         
         if (progress >= 100) {
@@ -209,100 +360,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }, intervalTime);
+}
 
-    // 6. FIREBASE CONTACT FORM
-    // PASTE YOUR FIREBASE CONFIG HERE FROM THE CONSOLE
-    const firebaseConfig = {
-        apiKey: "AIzaSyAU9YrlJNnSrEgs1653gJH1Vr-I13Zz7H0",
-        authDomain: "port-ca47b.firebaseapp.com",
-        projectId: "port-ca47b",
-        storageBucket: "port-ca47b.firebasestorage.app",
-        messagingSenderId: "504012788135",
-        appId: "1:504012788135:web:a9a05ece89aa1520816682"
-    };
+// I will adjust the target content to match exactly where I want to inject.
 
-
-
-    // Initialize Firebase only if config is valid
-    let db;
-    if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            console.log("Firebase initialized successfully");
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
-        }
-    }
-
-    const contactForm = document.getElementById('contactForm');
-    if(contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
-            const btn = document.querySelector('.magnetic-cta');
-            
-            // Visual Feedback
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="btn-text">SENDING...</span>';
-            
-            if (db) {
-                // Actual Firebase Submission
-                db.collection("messages").add({
-                    name: name,
-                    email: email,
-                    message: message,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                })
-                .then(() => {
-                    btn.innerHTML = '<span class="btn-text">MESSAGE SENT ✓</span>';
-                    btn.style.borderColor = "#00ff88";
-                    btn.style.color = "#00ff88";
-                    contactForm.reset();
-                    
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.borderColor = "white";
-                        btn.style.color = "white";
-                    }, 4000);
-                })
-                .catch((error) => {
-                    console.error("Error adding document: ", error);
-                    btn.innerHTML = '<span class="btn-text">ERROR, TRY AGAIN</span>';
-                    btn.style.borderColor = "#ff3b30";
-                    btn.style.color = "#ff3b30";
-                });
-            } else {
-                // Config missing fallback
-                console.warn("Firebase config missing. Form not actually sent.");
-                setTimeout(() => {
-                    btn.innerHTML = '<span class="btn-text">SETUP FIREBASE FIRST</span>';
-                    setTimeout(() => { btn.innerHTML = originalText; }, 3000);
-                }, 1000);
-            }
-        });
-    }
-
-    // 7. LOCAL TIME CLOCK
-    function updateTime() {
-        const timeDisplay = document.getElementById('local-time');
-        if(timeDisplay) {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false 
-            });
-            timeDisplay.textContent = timeString;
-        }
-    }
-    setInterval(updateTime, 1000);
-    updateTime();
-
-});
 
 
 // ============================================
@@ -311,9 +372,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function initThreeJS() {
     const container = document.getElementById('canvas-container');
     
+    // Check if container exists
+    if (!container) return;
+
     // Scene Setup
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.001); // Depth fog
+    scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
@@ -321,14 +385,14 @@ function initThreeJS() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.innerHTML = ''; // Clear previous if any
     container.appendChild(renderer.domElement);
 
-    // Geometry - "The Brain/Core"
-    // Reduce detail on mobile for performance
+    // Geometry
     const detail = window.innerWidth < 768 ? 16 : 64;
     const geometry = new THREE.IcosahedronGeometry(2, detail);
     
-    // Material - Wireframe style for "Tech" look
+    // Material
     const material = new THREE.MeshBasicMaterial({
         color: 0x444444,
         wireframe: true,
@@ -336,24 +400,12 @@ function initThreeJS() {
         opacity: 0.15
     });
 
-    // Add a second mesh for the "Glow" or inner volume
-    const innerMaterial = new THREE.MeshNormalMaterial({
-        wireframe: false,
-        flatShading: true,
-        transparent: true,
-        opacity: 0.1 // Very faint inner core
-    });
-    
     const sphere = new THREE.Mesh(geometry, material);
-    const innerSphere = new THREE.Mesh(geometry, innerMaterial);
-    
-    // Group them
     const coreGroup = new THREE.Group();
     coreGroup.add(sphere);
-    // coreGroup.add(innerSphere); // Optional, maybe too heavy/distracting
     scene.add(coreGroup);
 
-    // Lights (even though BasicMaterial doesn't need them, good for future)
+    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
@@ -362,7 +414,6 @@ function initThreeJS() {
     let mouseY = 0;
     let targetX = 0;
     let targetY = 0;
-
     const windowHalfX = window.innerWidth / 2;
     const windowHalfY = window.innerHeight / 2;
 
@@ -371,38 +422,71 @@ function initThreeJS() {
         mouseY = (event.clientY - windowHalfY);
     });
 
-    // CORE PULSE / NOISE ANIMATION
-    // We'll manually displace vertices to create a "breathing" liquid effect
-    const originalPositions = geometry.attributes.position.array.slice(); // Copy original
-    const count = geometry.attributes.position.count;
+    // SCROLL INTERACTION (Velocity)
+    let scrollSpeed = 0;
+    let lastScrollY = window.scrollY;
+    
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+        // Calculate speed
+        scrollSpeed = (currentScrollY - lastScrollY) * 0.005;
+        lastScrollY = currentScrollY;
+    });
 
-    // Animation Loop
+    // CLICK INTERACTION (Pulse)
+    document.addEventListener('mousedown', () => {
+        gsap.to(coreGroup.scale, {
+            x: 1.5,
+            y: 1.5,
+            z: 1.5,
+            duration: 0.1,
+            yoyo: true,
+            repeat: 1,
+            ease: "power2.out"
+        });
+        gsap.to(material, {
+            opacity: 0.8,
+            duration: 0.1,
+            yoyo: true,
+            repeat: 1
+        });
+    });
+
+    // ANIMATION LOOP
     const clock = new THREE.Clock();
+    const originalPositions = geometry.attributes.position.array.slice();
+    const count = geometry.attributes.position.count;
 
     function animate() {
         const time = clock.getElapsedTime();
 
+        // Dampen scroll speed back to 0
+        scrollSpeed *= 0.95;
+
+        // Rotation
         targetX = mouseX * 0.001;
         targetY = mouseY * 0.001;
 
-        // Smooth rotation
-        coreGroup.rotation.y += 0.5 * (targetX - coreGroup.rotation.y);
+        coreGroup.rotation.y += 0.5 * (targetX - coreGroup.rotation.y) + scrollSpeed; // Spin faster on scroll
         coreGroup.rotation.x += 0.5 * (targetY - coreGroup.rotation.x);
-        coreGroup.rotation.z += 0.005; // Constant drift
+        coreGroup.rotation.z += 0.005;
 
-        // Vertex Displacement (Warning: heavy on CPU, simple sine waves for now)
-        // Ideally utilize a Vertex Shader for this, but keeping it simple for JS file
+        // Vertex Displacement
         const positionAttribute = geometry.attributes.position;
         const positions = positionAttribute.array;
+
+        // Intensity based on scroll
+        const distortionIntensity = 0.05 + Math.abs(scrollSpeed) * 2; 
 
         for (let i = 0; i < count; i++) {
             const x = originalPositions[i * 3];
             const y = originalPositions[i * 3 + 1];
             const z = originalPositions[i * 3 + 2];
 
-            // Create noise-like movement using sine waves
-            // "Breathing" effect
-            const modifier = 1 + Math.sin(time * 2 + x * 2) * 0.05 + Math.cos(time * 1.5 + y) * 0.05;
+            // Breathing + Scroll Glitch
+            // When scrolling fast, frequency increases
+            const freq = 2 + Math.abs(scrollSpeed) * 10;
+            const modifier = 1 + Math.sin(time * 2 + x * freq) * distortionIntensity + Math.cos(time * 1.5 + y) * distortionIntensity;
             
             positions[i * 3] = x * modifier;
             positions[i * 3 + 1] = y * modifier;
@@ -417,11 +501,11 @@ function initThreeJS() {
     
     animate();
 
-    // Handle Resize
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Re-calculate detail if needed, but safe to keep constant for now
     });
 }
 
