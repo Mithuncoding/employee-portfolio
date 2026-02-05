@@ -1019,7 +1019,9 @@ body.loaded .preloader {
     }
 
     /* 6. UTILS */
-    .noise-overlay { opacity: 0.15; }
+    .noise-overlay { 
+        display: none !important; 
+    }
 }
 
 /* ==================
