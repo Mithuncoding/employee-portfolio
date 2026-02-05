@@ -904,7 +904,8 @@ body.loaded .preloader {
     }
 
     .hero-text {
-        font-size: 14vw; 
+        font-size: 11vw; /* Reduced from 14vw to fit 'INNOVATOR' */
+        line-height: 1.1;
     }
     
     .hero-sub {
