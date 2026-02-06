@@ -653,13 +653,64 @@ function initProjectViewer() {
         btn.addEventListener('click', (e) => {
             const url = btn.getAttribute('href');
             
-            // Only capture valid external URLs (not hash links)
-            if (url && url !== '#' && !url.startsWith('mailto')) {
+            // 1. Check if under construction
+            if (!url || url === '#' || url === '') {
+                e.preventDefault();
+                showNotification("🚧 Project Under Construction");
+                return;
+            }
+
+            // 2. Open valid URLs in modal (except mailto)
+            if (url && !url.startsWith('mailto')) {
                 e.preventDefault();
                 openModal(url);
             }
         });
     });
+
+    // Helper: Simple Toast Notification
+    function showNotification(message) {
+        // Remove existing
+        const existing = document.querySelector('.custom-toast');
+        if(existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'custom-toast';
+        toast.textContent = message;
+        
+        Object.assign(toast.style, {
+            position: 'fixed',
+            bottom: '30px',
+            left: '50%',
+            transform: 'translateX(-50%) translateY(20px)',
+            background: 'white',
+            color: 'black',
+            padding: '15px 30px',
+            borderRadius: '50px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            opacity: '0',
+            transition: 'all 0.4s cubic-bezier(0.19, 1, 0.22, 1)',
+            zIndex: '100000',
+            pointerEvents: 'none'
+        });
+
+        document.body.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        // Remove
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
 
     function openModal(url) {
         modal.classList.add('active');
