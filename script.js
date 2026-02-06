@@ -614,3 +614,21 @@ function initGSAP() {
     });
 
 }
+
+// ============================================
+// 12. GITHUB LOCK INTERACTION
+// ============================================
+function initGithubLock() {
+    const lockBtn = document.querySelector('.github-lock');
+    if(lockBtn) {
+        lockBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert("🔒 Access Restricted\n\nTo view my source code, please submit a request via the contact form.\nThis ensures intellectual property protection.");
+        });
+    }
+}
+// Add to init
+document.addEventListener('DOMContentLoaded', () => {
+    initGithubLock();
+});
+
