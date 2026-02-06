@@ -630,5 +630,76 @@ function initGithubLock() {
 // Add to init
 document.addEventListener('DOMContentLoaded', () => {
     initGithubLock();
+    initProjectViewer();
 });
+
+
+// ============================================
+// 13. PROJECT VIEWER MODAL
+// ============================================
+function initProjectViewer() {
+    const modal = document.getElementById('project-modal');
+    if (!modal) return;
+
+    const iframe = document.getElementById('project-frame');
+    const closeBtn = document.querySelector('.modal-close');
+    const backdrop = document.querySelector('.modal-backdrop');
+    const loader = document.querySelector('.modal-loader');
+    const externalLink = document.querySelector('.modal-external');
+    
+    // Open Modal
+    const viewButtons = document.querySelectorAll('.view-btn');
+    viewButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const url = btn.getAttribute('href');
+            
+            // Only capture valid external URLs (not hash links)
+            if (url && url !== '#' && !url.startsWith('mailto')) {
+                e.preventDefault();
+                openModal(url);
+            }
+        });
+    });
+
+    function openModal(url) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Lock scroll
+        
+        // Setup Loader
+        loader.style.display = 'block';
+        iframe.classList.remove('loaded');
+        
+        // Load URL
+        iframe.src = url;
+        externalLink.href = url;
+        
+        // Iframe Load Event
+        iframe.onload = () => {
+            loader.style.display = 'none';
+            iframe.classList.add('loaded');
+        };
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        document.body.style.overflow = ''; // Unlock scroll
+        
+        // Clear iframe to stop media/reset state
+        setTimeout(() => {
+            iframe.src = '';
+            iframe.classList.remove('loaded');
+        }, 500); // Wait for transition
+    }
+
+    // Close Events
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', closeModal);
+    
+    // Esc Key Close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+}
 

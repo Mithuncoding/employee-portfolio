@@ -477,6 +477,33 @@
     <!-- Page Transition Overlay -->
     <div class="transition-overlay"></div>
     
+    <!-- Project Viewer Modal -->
+    <div id="project-modal" class="project-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-controls">
+                    <button class="modal-close" aria-label="Close">
+                        <span class="icon-close">&times;</span>
+                    </button>
+                    <div class="modal-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="modal-title">PROJECT PREVIEW</div>
+                <a href="#" target="_blank" class="modal-external" aria-label="Open in new tab">
+                    <span class="icon-external">↗</span>
+                </a>
+            </div>
+            <div class="modal-content">
+                <div class="modal-loader">
+                    <div class="spinner"></div>
+                </div>
+                <iframe id="project-frame" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
