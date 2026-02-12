@@ -860,8 +860,8 @@ function initStatCounters() {
     if (!statNums.length) return;
 
     const animateCounter = (el) => {
-        const text = el.textContent.trim();
-        // Parse ending number and suffix (e.g., "08+" → 8, "+")
+        const text = el.dataset.originalText || el.textContent.trim();
+        // Parse ending number and suffix (e.g., "08+" -> 8, "+")
         const match = text.match(/^(\d+)(.*?)$/);
         if (!match) return;
 
