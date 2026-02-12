@@ -54,6 +54,10 @@ html, body {
     cursor: none; /* Hide default cursor */
 }
 
+a, button, input, textarea, select {
+    cursor: none;
+}
+
 html.lenis {
     height: auto;
 }
@@ -685,6 +689,23 @@ body.loaded .preloader {
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.1);
+    transform-style: preserve-3d;
+    will-change: transform;
+    transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.project-card:hover .project-img-wrapper {
+    border-color: rgba(76, 201, 240, 0.3);
+}
+
+/* Award box hover enhancement */
+.award-box {
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.award-box:hover {
+    transform: translateY(-5px);
+    border-color: rgba(76, 201, 240, 0.4) !important;
 }
 
 .project-img-wrapper::after {
@@ -1303,6 +1324,97 @@ body.loaded .preloader {
     /* 6. UTILS */
     .noise-overlay { 
         display: none !important; 
+    }
+
+    /* Fix cursor on mobile for all interactive elements */
+    *, *::before, *::after,
+    a, button, input, textarea, select {
+        cursor: auto !important;
+    }
+
+    /* Audio controls on mobile */
+    .audio-control.tech-btn {
+        bottom: 15px !important;
+        right: 15px !important;
+        padding: 8px 14px !important;
+        font-size: 0.65rem !important;
+    }
+
+    .playlist-widget {
+        bottom: 15px !important;
+        left: 15px !important;
+        font-size: 0.6rem !important;
+    }
+
+    .playlist-widget .scrolling-track {
+        width: 150px !important;
+    }
+
+    /* Stat box improvements */
+    .stat-box .num {
+        font-size: 2.5rem;
+    }
+
+    .stat-box .label {
+        font-size: 0.75rem;
+    }
+
+    /* Ticker on mobile */
+    .ticker-track {
+        font-size: 2rem;
+    }
+
+    .ticker-track span {
+        margin: 0 20px;
+    }
+
+    /* Timeline improvements */
+    .timeline-entry {
+        padding-left: 20px !important;
+        margin-bottom: 40px !important;
+    }
+}
+
+/* Extra small screens (375px and below) */
+@media screen and (max-width: 480px) {
+    .hero-text {
+        font-size: 9vw;
+    }
+
+    .work-header h2 {
+        font-size: 1.8rem !important;
+    }
+
+    .project-img-wrapper {
+        height: 200px;
+    }
+
+    .huge-text {
+        font-size: 14vw;
+    }
+
+    .about-right .lead {
+        font-size: 1.4rem;
+    }
+
+    .stats-row {
+        gap: 20px;
+    }
+
+    .stat-box .num {
+        font-size: 2rem;
+    }
+
+    .contact-marquee .track {
+        font-size: 0.8rem;
+    }
+
+    .nav-right {
+        gap: 8px;
+    }
+
+    .nav-link {
+        font-size: 0.7rem;
     }
 }
 

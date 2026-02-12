@@ -3,50 +3,64 @@
 // ============================================
 class SoundManager {
     constructor() {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.masterGain = this.ctx.createGain();
+        this.context = new (window.AudioContext || window.webkitAudioContext)(); // Renamed ctx to context
+        this.masterGain = this.context.createGain();
         this.masterGain.gain.value = 0.1; // Keep it subtle
-        this.masterGain.connect(this.ctx.destination);
+        this.masterGain.connect(this.context.destination);
+        this.initialized = true; // Added for new logic
+        this.isMuted = false; // Added for new logic
     }
 
-    playHover() {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+    playHoverSound() { // Renamed from playHover
+        // Haptic Feedback (Mobile)
+        if (navigator.vibrate) navigator.vibrate(5); // Light tick
+
+        if (!this.initialized || this.isMuted) return;
+        
+        if (this.context.state === 'suspended') this.context.resume(); // Changed ctx to context
+        const osc = this.context.createOscillator();
+        const gain = this.context.createGain();
+        const filter = this.context.createBiquadFilter(); // Added filter
         
         osc.connect(gain);
         gain.connect(this.masterGain);
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
+        // Quick high pitch chirp
+        osc.frequency.setValueAtTime(800 + Math.random() * 200, this.context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, this.context.currentTime + 0.1);
         
-        gain.gain.setValueAtTime(0, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.05, this.context.currentTime); // Very quiet
+        gain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + 0.1);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.1);
+        osc.stop(this.context.currentTime + 0.1);
     }
 
-    playClick() {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+    playClickSound() { // Renamed from playClick
+        // Haptic Feedback (Mobile)
+        if (navigator.vibrate) navigator.vibrate(20); // Heavy click
+
+        if (!this.initialized || this.isMuted) return;
+
+        if (this.context.state === 'suspended') this.context.resume(); // Changed ctx to context
+        // Heavy impact
+        const osc = this.context.createOscillator(); // Changed ctx to context
+        const gain = this.context.createGain();
         
         osc.connect(gain);
         gain.connect(this.masterGain);
 
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.2);
+        osc.frequency.setValueAtTime(150, this.context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 0.2);
         
-        gain.gain.setValueAtTime(0, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(1, this.ctx.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0, this.context.currentTime);
+        gain.gain.linearRampToValueAtTime(1, this.context.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + 0.2);
 
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.2);
+        osc.stop(this.context.currentTime + 0.2);
     }
 }
 
@@ -63,8 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach to interactive elements
     const interactiveElements = document.querySelectorAll('a, button, .project-card, input, textarea');
     interactiveElements.forEach(el => {
-        el.addEventListener('mouseenter', () => soundManager.playHover());
-        el.addEventListener('click', () => soundManager.playClick());
+        el.addEventListener('mouseenter', () => soundManager.playHoverSound());
+        el.addEventListener('click', () => soundManager.playClickSound());
     });
 
     // 2. LIQUID DISTORTION (SVG + GSAP)
@@ -174,6 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 10. NEW: PAGE TRANSITIONS
     initPageTransitions();
+
+    // 11. 3D PARALLAX TILT ON PROJECT CARDS
+    initCardTilt();
+
+    // 12. ANIMATED STAT COUNTERS
+    initStatCounters();
+
+    // 13. SECTION FADE-UP REVEALS
+    initSectionReveals();
 
 });
 
@@ -414,12 +437,22 @@ function initThreeJS() {
     let mouseY = 0;
     let targetX = 0;
     let targetY = 0;
+    
+    // Vectors for physics
+    const mouseVector = new THREE.Vector3();
+    const tempVector = new THREE.Vector3();
+
     const windowHalfX = window.innerWidth / 2;
     const windowHalfY = window.innerHeight / 2;
 
     document.addEventListener('mousemove', (event) => {
         mouseX = (event.clientX - windowHalfX);
         mouseY = (event.clientY - windowHalfY);
+        
+        // Update mouse vector for 3D calculation (normalized -1 to 1)
+        mouseVector.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseVector.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        mouseVector.z = 0.5; // Plane depth
     });
 
     // SCROLL INTERACTION (Velocity)
@@ -433,23 +466,19 @@ function initThreeJS() {
         lastScrollY = currentScrollY;
     });
 
-    // CLICK INTERACTION (Pulse)
-    document.addEventListener('mousedown', () => {
-        gsap.to(coreGroup.scale, {
-            x: 1.5,
-            y: 1.5,
-            z: 1.5,
-            duration: 0.1,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out"
-        });
-        gsap.to(material, {
-            opacity: 0.8,
-            duration: 0.1,
-            yoyo: true,
-            repeat: 1
-        });
+    // GYROSCOPE INTERACTION (Mobile Parallax)
+    window.addEventListener('deviceorientation', (event) => {
+        if (!event.beta) return;
+        
+        // Beta: -180 to 180 (front/back tilt)
+        // Gamma: -90 to 90 (left/right tilt)
+        
+        // Normalize to -1 to 1 range approx
+        const tiltX = Math.min(Math.max(event.gamma, -45), 45) / 45;
+        const tiltY = Math.min(Math.max(event.beta, -45), 45) / 45;
+        
+        mouseX = tiltX * 500;
+        mouseY = tiltY * 500;
     });
 
     // ANIMATION LOOP
@@ -464,33 +493,59 @@ function initThreeJS() {
         scrollSpeed *= 0.95;
 
         // Rotation
-        targetX = mouseX * 0.001;
-        targetY = mouseY * 0.001;
+        targetX = mouseX * 0.0005; // Slower, heavier rotation
+        targetY = mouseY * 0.0005;
 
-        coreGroup.rotation.y += 0.5 * (targetX - coreGroup.rotation.y) + scrollSpeed; // Spin faster on scroll
-        coreGroup.rotation.x += 0.5 * (targetY - coreGroup.rotation.x);
-        coreGroup.rotation.z += 0.005;
+        // Smooth rotation with "Weight"
+        coreGroup.rotation.y += 0.05 * (targetX - coreGroup.rotation.y) + scrollSpeed; // Spin faster on scroll
+        coreGroup.rotation.x += 0.05 * (targetY - coreGroup.rotation.x);
+        coreGroup.rotation.z += 0.002;
 
-        // Vertex Displacement
+        // Vertex Displacement "Liquid Metal" Effect
         const positionAttribute = geometry.attributes.position;
         const positions = positionAttribute.array;
 
-        // Intensity based on scroll
-        const distortionIntensity = 0.05 + Math.abs(scrollSpeed) * 2; 
-
+        // Map mouse position to 3D space rough approximation for vertex distance
+        // We project mouseVector to world space or just screen space distance
+        
+        
         for (let i = 0; i < count; i++) {
-            const x = originalPositions[i * 3];
-            const y = originalPositions[i * 3 + 1];
-            const z = originalPositions[i * 3 + 2];
+            const ix = i * 3;
+            const iy = i * 3 + 1;
+            const iz = i * 3 + 2;
 
-            // Breathing + Scroll Glitch
-            // When scrolling fast, frequency increases
-            const freq = 2 + Math.abs(scrollSpeed) * 10;
-            const modifier = 1 + Math.sin(time * 2 + x * freq) * distortionIntensity + Math.cos(time * 1.5 + y) * distortionIntensity;
+            const ox = originalPositions[ix];
+            const oy = originalPositions[iy];
+            const oz = originalPositions[iz];
+
+            // 1. Base Breathing (Organic)
+            // Complex noise simulation using sine layering
+            const noise = Math.sin(time * 1.5 + ox * 0.5) * Math.cos(time * 1.2 + oy * 0.5) * 0.2;
             
-            positions[i * 3] = x * modifier;
-            positions[i * 3 + 1] = y * modifier;
-            positions[i * 3 + 2] = z * modifier;
+            // 2. Scroll Glitch (Digital Distortion)
+            const glitch = (Math.random() - 0.5) * Math.abs(scrollSpeed) * 3; // Occasional spikes
+
+            // 3. Mouse Repulsion (Liquid Field)
+            // Calculate distance from this vertex (projected) to mouse
+            // Simple approximation: check World Position vs Mouse Screen Position
+            // Actually, let's keep it simple: Mouse moves a "Force Field" center
+            
+            // Calculate distance to "Interaction Point" which rotates with the object
+            // This makes the liquid stick to the object surface
+            const dist = Math.sqrt(
+                Math.pow(ox * 2 - mouseVector.x * 5, 2) + 
+                Math.pow(oy * 2 - mouseVector.y * 5, 2)
+            );
+
+            // Repulsion strength
+            const repulsion = Math.max(0, 1.5 - dist) * 0.5; // Only affect close vertices
+
+            // Combine forces
+            const scalar = 1 + noise + glitch + repulsion;
+
+            positions[ix] = ox * scalar;
+            positions[iy] = oy * scalar;
+            positions[iz] = oz * scalar;
         }
         
         positionAttribute.needsUpdate = true;
@@ -616,6 +671,212 @@ function initGSAP() {
 }
 
 // ============================================
+// 14. 3D PARALLAX TILT ON PROJECT CARDS
+// ============================================
+function initCardTilt() {
+    // Desktop only
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+
+    const cards = document.querySelectorAll('.project-card');
+
+    cards.forEach(card => {
+        const wrapper = card.querySelector('.project-img-wrapper');
+        if (!wrapper) return;
+
+        // Add perspective to parent
+        card.style.perspective = '800px';
+
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left; // cursor X relative to card
+            const y = e.clientY - rect.top; // cursor Y relative to card
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            // Calculate rotation (-8 to 8 degrees)
+            const rotateY = ((x - centerX) / centerX) * 8;
+            const rotateX = ((centerY - y) / centerY) * 8;
+
+            // Apply 3D transform with smooth GSAP
+            gsap.to(wrapper, {
+                rotateX: rotateX,
+                rotateY: rotateY,
+                scale: 1.02,
+                duration: 0.4,
+                ease: 'power2.out',
+                transformPerspective: 800
+            });
+
+            // Subtle glow effect based on cursor position
+            const glowX = (x / rect.width) * 100;
+            const glowY = (y / rect.height) * 100;
+            wrapper.style.boxShadow = `0 20px 60px rgba(76, 201, 240, 0.15)`;
+            wrapper.style.background = `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(76,201,240,0.08) 0%, #111 70%)`;
+        });
+
+        card.addEventListener('mouseleave', () => {
+            gsap.to(wrapper, {
+                rotateX: 0,
+                rotateY: 0,
+                scale: 1,
+                duration: 0.8,
+                ease: 'elastic.out(1, 0.5)'
+            });
+            wrapper.style.boxShadow = 'none';
+            wrapper.style.background = '#111';
+        });
+    });
+}
+
+// ============================================
+// 15. ANIMATED STAT COUNTERS
+// ============================================
+function initStatCounters() {
+    const statNums = document.querySelectorAll('.stat-box .num');
+    if (!statNums.length) return;
+
+    const animateCounter = (el) => {
+        const text = el.textContent.trim();
+        // Parse ending number and suffix (e.g., "08+" → 8, "+")
+        const match = text.match(/^(\d+)(.*?)$/);
+        if (!match) return;
+
+        const target = parseInt(match[1]);
+        const suffix = match[2]; // "+", etc.
+        const padLength = match[1].length; // preserve leading zeros
+
+        // Use GSAP for smooth counting
+        const counter = { val: 0 };
+        gsap.to(counter, {
+            val: target,
+            duration: 2,
+            ease: 'power2.out',
+            onUpdate: () => {
+                const current = Math.floor(counter.val);
+                el.textContent = String(current).padStart(padLength, '0') + suffix;
+            },
+            onComplete: () => {
+                el.textContent = String(target).padStart(padLength, '0') + suffix;
+            }
+        });
+    };
+
+    // Use IntersectionObserver to trigger on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target); // Only animate once
+            }
+        });
+    }, { threshold: 0.5 });
+
+    statNums.forEach(num => {
+        // Store original text
+        num.dataset.originalText = num.textContent.trim();
+        // Set initial state to zero
+        const match = num.textContent.trim().match(/^(\d+)(.*?)$/);
+        if (match) {
+            num.textContent = '0'.repeat(match[1].length) + match[2];
+        }
+        observer.observe(num);
+    });
+}
+
+// ============================================
+// 16. SECTION FADE-UP REVEALS
+// ============================================
+function initSectionReveals() {
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+    // Experience - Timeline entries
+    gsap.utils.toArray('.timeline-entry').forEach((entry, i) => {
+        gsap.from(entry, {
+            scrollTrigger: {
+                trigger: entry,
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            y: 60,
+            opacity: 0,
+            duration: 0.9,
+            delay: i * 0.15,
+            ease: 'power3.out'
+        });
+    });
+
+    // Achievements - Award boxes
+    gsap.utils.toArray('.award-box').forEach((box, i) => {
+        gsap.from(box, {
+            scrollTrigger: {
+                trigger: box,
+                start: 'top 88%',
+                toggleActions: 'play none none reverse'
+            },
+            y: 50,
+            opacity: 0,
+            scale: 0.95,
+            duration: 0.8,
+            delay: i * 0.1,
+            ease: 'power3.out'
+        });
+    });
+
+    // Stats row
+    gsap.from('.stats-row', {
+        scrollTrigger: {
+            trigger: '.stats-row',
+            start: 'top 85%',
+            toggleActions: 'play none none reverse'
+        },
+        y: 40,
+        opacity: 0,
+        duration: 1,
+        ease: 'power3.out'
+    });
+
+    // Skills ticker
+    gsap.from('.skills-ticker', {
+        scrollTrigger: {
+            trigger: '.skills-ticker',
+            start: 'top 90%',
+            toggleActions: 'play none none reverse'
+        },
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        ease: 'power3.out'
+    });
+
+    // Contact form
+    gsap.from('.minimal-form', {
+        scrollTrigger: {
+            trigger: '.minimal-form',
+            start: 'top 80%',
+            toggleActions: 'play none none reverse'
+        },
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        ease: 'power3.out'
+    });
+
+    // Social grid
+    gsap.from('.social-grid', {
+        scrollTrigger: {
+            trigger: '.social-grid',
+            start: 'top 85%',
+            toggleActions: 'play none none reverse'
+        },
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        ease: 'power3.out'
+    });
+}
+
+// ============================================
 // 12. GITHUB LOCK INTERACTION
 // ============================================
 function initGithubLock() {
@@ -711,6 +972,242 @@ function initProjectViewer() {
             setTimeout(() => toast.remove(), 400);
         }, 3000);
     }
+
+    // Assuming these functions are part of a larger AudioSystem class or object
+    // For this edit, they are placed as standalone functions within initProjectViewer
+    // to match the provided context, but ideally they would be methods of an AudioSystem.
+    // Placeholder for `this` context:
+    let isMuted = true; // Default state
+    let audioContext = null;
+    let masterGainNode = null;
+    let audioInitialized = false; // To track if audio system has been initialized
+
+    // Placeholder for init() if it were a class method
+    function initAudioSystem() {
+        if (audioInitialized) return;
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGainNode = audioContext.createGain();
+        masterGainNode.gain.value = 0; // Start muted
+        masterGainNode.connect(audioContext.destination);
+        audioInitialized = true;
+        console.log("Audio System Initialized (Placeholder)");
+    }
+
+
+    // Audio System Class
+    class AudioSystem {
+        constructor() {
+            this.context = null;
+            this.droneOscillators = [];
+            this.masterGain = null;
+            this.isMuted = true;
+            this.initialized = false;
+            
+            // Playlist Logic
+            this.bgMusic = new Audio();
+            this.bgMusic.volume = 0.2; // Background level
+            this.currentTrackIndex = 0;
+            this.totalTracks = 20; // User said 20 songs
+            this.isPlaying = false;
+            
+            this.setupUI();
+            this.setupListeners();
+        }
+
+        init() {
+            if (this.initialized) return;
+            
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.context = new AudioContext();
+                this.masterGain = this.context.createGain();
+                this.masterGain.connect(this.context.destination);
+                this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.4, this.context.currentTime); 
+                
+                this.startDrone();
+                this.playTrack(1); // Start with song1.mp3
+                
+                this.initialized = true;
+                console.log("Audio System Online");
+            } catch (e) {
+                console.error("Audio Init Failed", e);
+            }
+        }
+
+        playTrack(index) {
+            // Wrap around
+            if (index > this.totalTracks) index = 1;
+            if (index < 1) index = this.totalTracks;
+            
+            this.currentTrackIndex = index;
+            
+            // Try to load song
+            // Note: User must have files named song1.mp3, song2.mp3... in 'songs' folder
+            this.bgMusic.src = `songs/song${index}.mp3`;
+            
+            // When ended, play next
+            this.bgMusic.onended = () => {
+                this.playTrack(this.currentTrackIndex + 1);
+            };
+            
+            // Update UI
+            this.updateNowPlaying(`Track ${index}`); // Placeholder names until metadata
+
+            if (!this.isMuted) {
+                this.bgMusic.play().catch(e => console.log("Waiting for interaction"));
+            }
+        }
+
+        updateNowPlaying(name) {
+            const trackText = document.querySelector('.track-text');
+            if (trackText) {
+                // Update marquee string
+                trackText.innerHTML = `NOW PLAYING: ${name} • ENGINEERING SOUNDTRACK • ${name} • `;
+            }
+        }
+
+        startDrone() {
+            // ... (Existing drone logic)
+            // Only run drone if we want it MIXED with music, or maybe disable it if music plays?
+            // Let's keep it as a subtle underlayer for "Void" atmosphere
+            const fund = 55; 
+            const ratios = [1, 1.5, 2.02];
+            
+            ratios.forEach(ratio => {
+                const osc = this.context.createOscillator();
+                const gain = this.context.createGain();
+                const filter = this.context.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(fund * ratio, this.context.currentTime);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, this.context.currentTime);
+                
+                const lfo = this.context.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.1;
+                const lfoGain = this.context.createGain();
+                lfoGain.gain.value = 100;
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                lfo.start();
+
+                gain.gain.setValueAtTime(0.05, this.context.currentTime); // Lower drone vol
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                
+                this.droneOscillators.push(osc);
+            });
+        }
+
+        toggleMute(btn) {
+            if (!this.initialized) this.init(); 
+            
+            this.isMuted = !this.isMuted;
+            btn.innerHTML = this.isMuted ? 'AUDIO SYSTEM: <span style="color:#666">OFFLINE</span>' : 'AUDIO SYSTEM: <span style="color:#4cc9f0">ONLINE</span>';
+            btn.style.borderColor = this.isMuted ? 'rgba(255,255,255,0.2)' : '#4cc9f0';
+            
+            if (this.context && this.context.state === 'suspended') {
+                this.context.resume();
+            }
+
+            if (this.masterGain) {
+                const targetGain = this.isMuted ? 0 : 0.4;
+                this.masterGain.gain.setTargetAtTime(targetGain, this.context.currentTime, 0.1);
+            }
+
+            // Handle Music
+            if (this.isMuted) {
+                this.bgMusic.pause();
+            } else {
+                this.bgMusic.play().catch(e => console.log("Autoplay blocked"));
+            }
+        }
+
+        setupUI() {
+            // 1. Mute Toggle (Bottom Right - Enhanced)
+            const btn = document.createElement('button');
+            btn.innerHTML = 'AUDIO SYSTEM: <span style="color:#666">OFFLINE</span>';
+            btn.className = 'audio-control tech-btn';
+            Object.assign(btn.style, {
+                position: 'fixed',
+                bottom: '40px',
+                right: '40px',
+                zIndex: '10000',
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: 'white',
+                padding: '12px 24px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                transition: 'all 0.3s ease'
+            });
+            
+            btn.addEventListener('mouseenter', () => {
+                btn.style.borderColor = '#4cc9f0';
+                btn.style.boxShadow = '0 0 15px rgba(76, 201, 240, 0.3)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                if(this.isMuted) { // Use 'this.isMuted'
+                    btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                    btn.style.boxShadow = 'none';
+                }
+            });
+
+            btn.onclick = () => this.toggleMute(btn); // Use 'this.toggleMute'
+            document.body.appendChild(btn);
+
+            // 2. Playlist Widget (Bottom Left)
+            const playlistContainer = document.createElement('div');
+            playlistContainer.className = 'playlist-widget';
+            Object.assign(playlistContainer.style, {
+                position: 'fixed',
+                bottom: '40px',
+                left: '40px',
+                zIndex: '9990',
+                fontFamily: 'var(--font-display)',
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '0.7rem',
+                letterSpacing: '1px',
+                textAlign: 'left',
+                pointerEvents: 'none' // Passthrough
+            });
+
+            playlistContainer.innerHTML = `
+                <div style="margin-bottom: 8px; font-weight: 700; color: white;">ENGINEERING SOUNDTRACK</div>
+                <div class="scrolling-track" style="overflow: hidden; width: 250px; white-space: nowrap;">
+                    <div class="track-text" style="display: inline-block;">
+                        INTERSTELLAR OST •  TRON LEGACY • DARK KNIGHT • BLADE RUNNER 2049 • HANS ZIMMER • DAFT PUNK • 
+                        INTERSTELLAR OST •  TRON LEGACY • DARK KNIGHT • BLADE RUNNER 2049 • HANS ZIMMER • DAFT PUNK •
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(playlistContainer);
+
+            // Animate Marquee
+            gsap.to('.track-text', {
+                x: '-50%',
+                duration: 20,
+                repeat: -1,
+                ease: 'linear'
+            });
+        }
+
+        setupListeners() {
+            // Add any other global listeners here if needed
+        }
+    }
+
+    // Instantiate the AudioSystem
+    const audioSystem = new AudioSystem();
 
     function openModal(url) {
         modal.classList.add('active');
