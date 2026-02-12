@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. FIREBASE & OTHERS
     initFirebase();
     initClock();
+    initContactForm();
 
     // 8. NEW: MAGIC MAGNETIC BUTTONS
     initMagneticButtons();
@@ -385,8 +386,130 @@ function initPreloader() {
     }, intervalTime);
 }
 
-// I will adjust the target content to match exactly where I want to inject.
+// ============================================
+// FIREBASE INITIALIZATION
+// ============================================
+function initFirebase() {
+    try {
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyReplace",
+            authDomain: "portfolio-contact.firebaseapp.com",
+            projectId: "portfolio-contact",
+            storageBucket: "portfolio-contact.appspot.com",
+            messagingSenderId: "000000000000",
+            appId: "1:000000000000:web:0000000000000000"
+        };
 
+        // Only init if Firebase SDK loaded and not already initialized
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized");
+        }
+    } catch (e) {
+        console.warn("Firebase init skipped:", e.message);
+    }
+}
+
+// ============================================
+// LIVE CLOCK (BENGALURU IST)
+// ============================================
+function initClock() {
+    const clockEl = document.getElementById('local-time');
+    if (!clockEl) return;
+
+    function updateTime() {
+        const now = new Date();
+        const options = {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Kolkata'
+        };
+        clockEl.textContent = now.toLocaleTimeString('en-IN', options);
+    }
+
+    updateTime();
+    setInterval(updateTime, 1000);
+}
+
+// ============================================
+// CONTACT FORM HANDLER
+// ============================================
+function initContactForm() {
+    const form = document.getElementById('contactForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        if (!name || !email || !message) return;
+
+        // Try to save to Firebase Firestore
+        try {
+            if (typeof firebase !== 'undefined' && firebase.apps.length) {
+                const db = firebase.firestore();
+                db.collection('contacts').add({
+                    name: name,
+                    email: email,
+                    message: message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        } catch (e) {
+            console.warn("Firestore save skipped:", e.message);
+        }
+
+        // Show success toast
+        showFormToast("✅ Message sent! I'll get back to you soon.");
+        form.reset();
+    });
+
+    function showFormToast(msg) {
+        const existing = document.querySelector('.form-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'form-toast';
+        toast.textContent = msg;
+        Object.assign(toast.style, {
+            position: 'fixed',
+            bottom: '30px',
+            left: '50%',
+            transform: 'translateX(-50%) translateY(20px)',
+            background: '#4cc9f0',
+            color: 'black',
+            padding: '15px 30px',
+            borderRadius: '50px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            opacity: '0',
+            transition: 'all 0.4s cubic-bezier(0.19, 1, 0.22, 1)',
+            zIndex: '100000',
+            pointerEvents: 'none'
+        });
+
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
+    }
+}
+
+// I will adjust the target content to match exactly where I want to inject.
 
 
 // ============================================
@@ -1007,7 +1130,7 @@ function initProjectViewer() {
             this.bgMusic = new Audio();
             this.bgMusic.volume = 0.2; // Background level
             this.currentTrackIndex = 0;
-            this.totalTracks = 20; // User said 20 songs
+            this.totalTracks = 3; // 3 songs in songs folder
             this.isPlaying = false;
             
             this.setupUI();
