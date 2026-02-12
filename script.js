@@ -1164,8 +1164,13 @@ function initProjectViewer() {
             
             this.currentTrackIndex = index;
             
-            // Try to load song
-            // Note: User must have files named song1.mp3, song2.mp3... in 'songs' folder
+            // Song name map
+            const songNames = {
+                1: 'NAPOLEON × RAMMSTEIN',
+                2: 'DERNIÈRE DANSE — INDILA',
+                3: 'SKYFALL — ADELE'
+            };
+            
             this.bgMusic.src = `songs/song${index}.mp3`;
             
             // When ended, play next
@@ -1173,19 +1178,23 @@ function initProjectViewer() {
                 this.playTrack(this.currentTrackIndex + 1);
             };
             
-            // Update UI
-            this.updateNowPlaying(`Track ${index}`); // Placeholder names until metadata
+            // Update UI with real song name
+            const name = songNames[index] || `TRACK ${index}`;
+            this.updateNowPlaying(name, index);
 
             if (!this.isMuted) {
                 this.bgMusic.play().catch(e => console.log("Waiting for interaction"));
             }
         }
 
-        updateNowPlaying(name) {
+        updateNowPlaying(name, index) {
             const trackText = document.querySelector('.track-text');
+            const trackNum = document.querySelector('.track-num');
             if (trackText) {
-                // Update marquee string
-                trackText.innerHTML = `NOW PLAYING: ${name} • ENGINEERING SOUNDTRACK • ${name} • `;
+                trackText.innerHTML = `NOW PLAYING: ${name} • ${name} • NOW PLAYING: ${name} • ${name} • `;
+            }
+            if (trackNum) {
+                trackNum.textContent = `${String(index).padStart(2, '0')} / ${String(this.totalTracks).padStart(2, '0')}`;
             }
         }
 
@@ -1288,7 +1297,7 @@ function initProjectViewer() {
             btn.onclick = () => this.toggleMute(btn); // Use 'this.toggleMute'
             document.body.appendChild(btn);
 
-            // 2. Playlist Widget (Bottom Left)
+            // 2. Playlist Widget (Bottom Left) — Premium Player
             const playlistContainer = document.createElement('div');
             playlistContainer.className = 'playlist-widget';
             Object.assign(playlistContainer.style, {
@@ -1301,24 +1310,64 @@ function initProjectViewer() {
                 fontSize: '0.7rem',
                 letterSpacing: '1px',
                 textAlign: 'left',
-                pointerEvents: 'none' // Passthrough
+                maxWidth: '300px'
             });
 
             playlistContainer.innerHTML = `
-                <div style="margin-bottom: 8px; font-weight: 700; color: white;">ENGINEERING SOUNDTRACK</div>
-                <div class="scrolling-track" style="overflow: hidden; width: 250px; white-space: nowrap;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: 700; color: white; font-size: 0.7rem;">ENGINEERING SOUNDTRACK</span>
+                    <span class="track-num" style="color: #4cc9f0; font-size: 0.65rem;">01 / 03</span>
+                </div>
+                <div class="scrolling-track" style="overflow: hidden; width: 250px; white-space: nowrap; margin-bottom: 10px;">
                     <div class="track-text" style="display: inline-block;">
-                        INTERSTELLAR OST •  TRON LEGACY • DARK KNIGHT • BLADE RUNNER 2049 • HANS ZIMMER • DAFT PUNK • 
-                        INTERSTELLAR OST •  TRON LEGACY • DARK KNIGHT • BLADE RUNNER 2049 • HANS ZIMMER • DAFT PUNK •
+                        NAPOLEON × RAMMSTEIN • DERNIÈRE DANSE — INDILA • SKYFALL — ADELE • NAPOLEON × RAMMSTEIN • DERNIÈRE DANSE — INDILA • SKYFALL — ADELE •
                     </div>
+                </div>
+                <div class="player-controls" style="display: flex; align-items: center; gap: 12px; pointer-events: auto;">
+                    <button class="ctrl-btn prev-btn" aria-label="Previous track" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">◀</button>
+                    <button class="ctrl-btn next-btn" aria-label="Next track" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">▶</button>
                 </div>
             `;
             document.body.appendChild(playlistContainer);
 
+            // Wire up controls
+            const prevBtn = playlistContainer.querySelector('.prev-btn');
+            const nextBtn = playlistContainer.querySelector('.next-btn');
+            
+            prevBtn.addEventListener('click', () => {
+                if (!this.initialized) this.init();
+                this.playTrack(this.currentTrackIndex - 1);
+                if (this.isMuted) {
+                    this.toggleMute(document.querySelector('.audio-control'));
+                }
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                if (!this.initialized) this.init();
+                this.playTrack(this.currentTrackIndex + 1);
+                if (this.isMuted) {
+                    this.toggleMute(document.querySelector('.audio-control'));
+                }
+            });
+
+            // Hover glow on control buttons
+            playlistContainer.querySelectorAll('.ctrl-btn').forEach(b => {
+                b.addEventListener('mouseenter', () => {
+                    b.style.borderColor = '#4cc9f0';
+                    b.style.color = '#4cc9f0';
+                    b.style.boxShadow = '0 0 10px rgba(76,201,240,0.3)';
+                });
+                b.addEventListener('mouseleave', () => {
+                    b.style.borderColor = 'rgba(255,255,255,0.2)';
+                    b.style.color = 'white';
+                    b.style.boxShadow = 'none';
+                });
+            });
+
             // Animate Marquee
             gsap.to('.track-text', {
                 x: '-50%',
-                duration: 20,
+                duration: 15,
                 repeat: -1,
                 ease: 'linear'
             });

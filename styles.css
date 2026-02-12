@@ -1344,10 +1344,21 @@ body.loaded .preloader {
         bottom: 15px !important;
         left: 15px !important;
         font-size: 0.6rem !important;
+        max-width: 200px !important;
     }
 
     .playlist-widget .scrolling-track {
         width: 150px !important;
+    }
+
+    .playlist-widget .ctrl-btn {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 0.55rem !important;
+    }
+
+    .playlist-widget .player-controls {
+        gap: 8px !important;
     }
 
     /* Stat box improvements */
