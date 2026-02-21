@@ -1338,34 +1338,7 @@ body.loaded .preloader {
         cursor: auto !important;
     }
 
-    /* Audio controls on mobile */
-    .audio-control.tech-btn {
-        bottom: 15px !important;
-        right: 15px !important;
-        padding: 8px 14px !important;
-        font-size: 0.65rem !important;
-    }
-
-    .playlist-widget {
-        bottom: 15px !important;
-        left: 15px !important;
-        font-size: 0.6rem !important;
-        max-width: 200px !important;
-    }
-
-    .playlist-widget .scrolling-track {
-        width: 150px !important;
-    }
-
-    .playlist-widget .ctrl-btn {
-        width: 26px !important;
-        height: 26px !important;
-        font-size: 0.55rem !important;
-    }
-
-    .playlist-widget .player-controls {
-        gap: 8px !important;
-    }
+    /* audio controls hidden by new mobile architecture media query at bottom of file */
 
     /* Stat box improvements */
     .stat-box .num {
@@ -1394,10 +1367,8 @@ body.loaded .preloader {
 
 /* Extra small screens (375px and below) */
 @media screen and (max-width: 480px) {
-    .hero-text {
-        font-size: 9vw;
-    }
-
+    /* Hero text sizing left to new mobile architecture query */
+    
     .work-header h2 {
         font-size: 1.8rem !important;
     }
@@ -1635,6 +1606,224 @@ body.loaded .preloader {
 .wave-ring:nth-child(3) { width: 50px; height: 50px; animation-delay: 2s; }
 
 @keyframes matrix { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+/* ==================
+   MOBILE ARCHITECTURE (NATIVE APP EXPERIENCE)
+   ================== */
+.mobile-nav {
+    display: none; /* Hidden on desktop */
+}
+
+@media screen and (max-width: 768px) {
+    /* 1. Hide Desktop Nav, Show Mobile Native Bottom Bar */
+    .nav {
+        display: none !important;
+    }
+
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        background: rgba(10, 10, 10, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 12px 25px;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10000;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .mobile-nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255, 255, 255, 0.5);
+        text-decoration: none;
+        font-size: 0.6rem;
+        font-family: var(--font-display);
+        letter-spacing: 1px;
+        transition: color 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .mobile-nav-link.highlight {
+        color: var(--accent-color);
+    }
+
+    .mobile-nav-link:active, 
+    .mobile-nav-link:focus {
+        color: var(--text-color);
+    }
+    
+    .mobile-nav-link svg {
+        transition: transform 0.2s;
+    }
+
+    .mobile-nav-link:active svg {
+        transform: scale(0.85);
+    }
+
+    /* 2. Hero Text Scaling (Prevent breaks) */
+    .hero-section {
+        padding: 0 20px;
+    }
+
+    .hero-text {
+        font-size: clamp(2rem, 10vw, 3rem) !important; /* Smaller baseline so INNOVATOR fits */
+        line-height: 1.05;
+        word-break: break-word; /* Safety fallback */
+    }
+    
+    @media screen and (max-width: 400px) {
+        .hero-text {
+            font-size: 2.5rem !important; /* Force to fit iPhone screens */
+        }
+    }
+
+    .hero-sub {
+        flex-direction: column;
+        gap: 15px;
+        font-size: 0.8rem;
+        padding-top: 15px;
+    }
+
+    .scroll-prompt {
+        bottom: 120px; /* Above bottom nav */
+    }
+
+    /* Fixed Audio widgets to prevent overlap with new mobile nav */
+    .playlist-widget, .playlist-widget * {
+        display: none !important; /* Aggressively hide complex playlist on mobile */
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    
+    .audio-control {
+        bottom: auto !important;
+        top: 20px !important;
+        right: 20px !important;
+        padding: 8px 15px !important;
+        font-size: 0.65rem !important;
+    }
+
+    /* 3. Disable Horizontal Scroll & Create Vertical Stack for Work */
+    .work-section {
+        padding-top: 60px;
+    }
+    
+    .work-container {
+        height: auto; /* Allow growth, not tied to 100vh */
+        overflow: visible;
+        display: block;
+    }
+
+    .work-header {
+        padding: 0 20px;
+        margin-bottom: 30px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .work-header h2 {
+        font-size: 2.5rem;
+    }
+
+    .horizontal-scroll-wrapper {
+        display: block;
+        overflow: visible;
+    }
+
+    .horizontal-track {
+        display: flex;
+        flex-direction: column; /* Stack vertically! */
+        gap: 40px;
+        padding: 0 20px 120px 20px; /* Bottom padding to clear nav */
+        width: 100%;
+    }
+
+    .project-item {
+        width: 100%; /* Take full width */
+    }
+
+    .project-card {
+        margin-bottom: 20px;
+    }
+
+    .project-img-wrapper {
+        height: 250px; /* Shorter for mobile ratio */
+        border-radius: 15px;
+    }
+
+    .project-info {
+        padding-top: 15px;
+    }
+
+    .project-info h3 {
+        font-size: 1.3rem;
+    }
+    
+    .overlay-btn {
+        padding: 10px 20px;
+        font-size: 0.75rem;
+    }
+
+    /* 4. About & Experience Sections Adjustments */
+    .about-section {
+        padding: 80px 20px 120px 20px;
+    }
+
+    .about-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .about-left h2 {
+        position: relative;
+        top: 0;
+        font-size: 2.5rem;
+    }
+
+    .stats-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .awards-grid {
+        grid-template-columns: 1fr !important; /* Force 1 column */
+    }
+
+    /* 5. Contact Form Adjustments */
+    .contact-section {
+        padding: 80px 0 150px 0; /* Huge padding at bottom for nav */
+    }
+
+    .contact-layout {
+        flex-direction: column;
+        gap: 50px;
+        padding: 0 20px;
+    }
+
+    .huge-text {
+        font-size: 3rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .contact-container {
+        padding-bottom: 150px; /* Make room for bottom nav */
+    }
+}
 @keyframes morph { 0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; } 50% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } }
 @keyframes pan { 0% { background-position: 0 0; } 100% { background-position: 20px 20px; } }
 @keyframes pulse-rotate { 0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) rotate(225deg) scale(1.2); opacity: 0.4; } 100% { transform: translate(-50%, -50%) rotate(405deg) scale(1); opacity: 0.8; } }
