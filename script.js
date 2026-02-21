@@ -517,54 +517,129 @@ function initContactForm() {
 // ============================================
 function initThreeJS() {
     const container = document.getElementById('canvas-container');
-    
-    // Check if container exists
     if (!container) return;
 
     // Scene Setup
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.001);
+    scene.fog = new THREE.FogExp2(0x000000, 0.002);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
+    camera.position.z = 150;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.innerHTML = ''; // Clear previous if any
+    container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // Geometry
-    const detail = window.innerWidth < 768 ? 16 : 64;
-    const geometry = new THREE.IcosahedronGeometry(2, detail);
-    
-    // Material
-    const material = new THREE.MeshBasicMaterial({
-        color: 0x444444,
-        wireframe: true,
+    // Particle Configuration (Optimized for Mobile and Desktop)
+    const particleCount = window.innerWidth < 768 ? 8000 : 25000; // Increased count
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const originalPositions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+    const phases = new Float32Array(particleCount);
+
+    const colorObj = new THREE.Color();
+    const accentColor = new THREE.Color(0x4cc9f0); // Cyan/blue
+    const secondaryColor = new THREE.Color(0xffffff); // Pure white replacing dark grey
+
+    for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        
+        // Push particles closer to camera and spread them wider
+        const radius = 50 + Math.random() * 300; 
+        const theta = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 600; // Taller spread
+
+        const x = Math.cos(theta) * radius;
+        const z = Math.sin(theta) * radius;
+
+        positions[i3] = x;
+        positions[i3 + 1] = y;
+        positions[i3 + 2] = z;
+
+        originalPositions[i3] = x;
+        originalPositions[i3 + 1] = y;
+        originalPositions[i3 + 2] = z;
+
+        // Color distribution (90% bright white/grey, 10% bold accent)
+        if (Math.random() > 0.90) {
+            colorObj.copy(accentColor);
+        } else {
+            // Brighter base particles!
+            colorObj.setHSL(0, 0, 0.4 + Math.random() * 0.6); 
+        }
+
+        colors[i3] = colorObj.r;
+        colors[i3 + 1] = colorObj.g;
+        colors[i3 + 2] = colorObj.b;
+
+        // Much larger base size so they are actually visible
+        sizes[i] = Math.random() * 2.5 + 1.5; 
+        phases[i] = Math.random() * Math.PI * 2;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('originalPosition', new THREE.BufferAttribute(originalPositions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+
+    // Custom Shader Material for ethereal glow and floating
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute float phase;
+            varying vec3 vColor;
+            uniform float time;
+            
+            void main() {
+                vColor = color;
+                
+                // Add gentle floating motion, slightly faster
+                vec3 pos = position;
+                pos.y += sin(time * 0.8 + phase) * 12.0;
+                pos.x += cos(time * 0.5 + phase) * 12.0;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                // Size attenuation based on depth (exaggerated)
+                gl_PointSize = size * (400.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            void main() {
+                // Circular soft particle
+                float d = distance(gl_PointCoord, vec2(0.5));
+                if (d > 0.5) discard;
+                
+                // Brighter alpha center
+                float alpha = smoothstep(0.5, 0.05, d);
+                gl_FragColor = vec4(vColor, alpha); // Removed * 0.8 to make them fully bright
+            }
+        `,
         transparent: true,
-        opacity: 0.15
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
     });
 
-    const sphere = new THREE.Mesh(geometry, material);
-    const coreGroup = new THREE.Group();
-    coreGroup.add(sphere);
-    scene.add(coreGroup);
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    // MOUSE INTERACTION
+    // MOUSE INTERACTION SETUP
     let mouseX = 0;
     let mouseY = 0;
     let targetX = 0;
     let targetY = 0;
     
-    // Vectors for physics
-    const mouseVector = new THREE.Vector3();
-    const tempVector = new THREE.Vector3();
-
+    const mouseVector = new THREE.Vector3(0, 0, 0);
     const windowHalfX = window.innerWidth / 2;
     const windowHalfY = window.innerHeight / 2;
 
@@ -572,107 +647,100 @@ function initThreeJS() {
         mouseX = (event.clientX - windowHalfX);
         mouseY = (event.clientY - windowHalfY);
         
-        // Update mouse vector for 3D calculation (normalized -1 to 1)
+        // Mouse vector for 3D repulsion logic
         mouseVector.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouseVector.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        mouseVector.z = 0.5; // Plane depth
+        mouseVector.z = 0.5; // Depth reference point
     });
 
-    // SCROLL INTERACTION (Velocity)
+    // SCROLL INTERACTION
     let scrollSpeed = 0;
     let lastScrollY = window.scrollY;
     
     window.addEventListener('scroll', () => {
         const currentScrollY = window.scrollY;
-        // Calculate speed
-        scrollSpeed = (currentScrollY - lastScrollY) * 0.005;
+        scrollSpeed = (currentScrollY - lastScrollY); // Accumulate velocity
         lastScrollY = currentScrollY;
     });
 
-    // GYROSCOPE INTERACTION (Mobile Parallax)
+    // GYROSCOPE (Mobile Parallax)
     window.addEventListener('deviceorientation', (event) => {
         if (!event.beta) return;
-        
-        // Beta: -180 to 180 (front/back tilt)
-        // Gamma: -90 to 90 (left/right tilt)
-        
-        // Normalize to -1 to 1 range approx
         const tiltX = Math.min(Math.max(event.gamma, -45), 45) / 45;
         const tiltY = Math.min(Math.max(event.beta, -45), 45) / 45;
-        
-        mouseX = tiltX * 500;
+        mouseX = tiltX * 500; // Increased mobile sensitivity
         mouseY = tiltY * 500;
     });
 
     // ANIMATION LOOP
     const clock = new THREE.Clock();
-    const originalPositions = geometry.attributes.position.array.slice();
-    const count = geometry.attributes.position.count;
 
     function animate() {
         const time = clock.getElapsedTime();
 
-        // Dampen scroll speed back to 0
+        // Dampen scroll speed smoothly
         scrollSpeed *= 0.95;
 
-        // Rotation
-        targetX = mouseX * 0.0005; // Slower, heavier rotation
-        targetY = mouseY * 0.0005;
+        // Camera Pan (Parallax)
+        targetX = mouseX * 0.05;
+        targetY = mouseY * 0.05;
 
-        // Smooth rotation with "Weight"
-        coreGroup.rotation.y += 0.05 * (targetX - coreGroup.rotation.y) + scrollSpeed; // Spin faster on scroll
-        coreGroup.rotation.x += 0.05 * (targetY - coreGroup.rotation.x);
-        coreGroup.rotation.z += 0.002;
-
-        // Vertex Displacement "Liquid Metal" Effect
-        const positionAttribute = geometry.attributes.position;
-        const positions = positionAttribute.array;
-
-        // Map mouse position to 3D space rough approximation for vertex distance
-        // We project mouseVector to world space or just screen space distance
+        camera.position.x += (targetX - camera.position.x) * 0.05;
+        camera.position.y += (-targetY - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
         
+        // Swarm Rotation (Mouse X + Continuous slow spin + Scroll burst)
+        particles.rotation.y = time * 0.03 + (mouseX * 0.0005) + (scrollSpeed * 0.002);
+        particles.rotation.x = mouseY * 0.0002;
         
-        for (let i = 0; i < count; i++) {
-            const ix = i * 3;
-            const iy = i * 3 + 1;
-            const iz = i * 3 + 2;
+        material.uniforms.time.value = time;
 
-            const ox = originalPositions[ix];
-            const oy = originalPositions[iy];
-            const oz = originalPositions[iz];
+        // Particle Interactive Physics (Desktop only for performance)
+        const posAttr = geometry.attributes.position;
+        const origAttr = geometry.attributes.originalPosition;
+        const posArray = posAttr.array;
+        const origArray = origAttr.array;
 
-            // 1. Base Breathing (Organic)
-            // Complex noise simulation using sine layering
-            const noise = Math.sin(time * 1.5 + ox * 0.5) * Math.cos(time * 1.2 + oy * 0.5) * 0.2;
-            
-            // 2. Scroll Glitch (Digital Distortion)
-            const glitch = (Math.random() - 0.5) * Math.abs(scrollSpeed) * 3; // Occasional spikes
+        if (window.innerWidth >= 768) {
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                
+                const px = posArray[i3];
+                const py = posArray[i3 + 1];
+                
+                const ox = origArray[i3];
+                const oy = origArray[i3 + 1];
 
-            // 3. Mouse Repulsion (Liquid Field)
-            // Calculate distance from this vertex (projected) to mouse
-            // Simple approximation: check World Position vs Mouse Screen Position
-            // Actually, let's keep it simple: Mouse moves a "Force Field" center
-            
-            // Calculate distance to "Interaction Point" which rotates with the object
-            // This makes the liquid stick to the object surface
-            const dist = Math.sqrt(
-                Math.pow(ox * 2 - mouseVector.x * 5, 2) + 
-                Math.pow(oy * 2 - mouseVector.y * 5, 2)
-            );
+                // Simple 2D Repulsion Field (Projected)
+                // We fake the world distance to mouse using mouseVector multiplied by a world scale
+                const mxWorld = mouseVector.x * 300; 
+                const myWorld = mouseVector.y * 200;
 
-            // Repulsion strength
-            const repulsion = Math.max(0, 1.5 - dist) * 0.5; // Only affect close vertices
+                const dx = px - mxWorld;
+                const dy = py - myWorld;
+                const distSq = dx * dx + dy * dy;
 
-            // Combine forces
-            const scalar = 1 + noise + glitch + repulsion;
+                const repelRadiusSq = 10000; // Radius of 100 units squared
 
-            positions[ix] = ox * scalar;
-            positions[iy] = oy * scalar;
-            positions[iz] = oz * scalar;
+                if (distSq < repelRadiusSq) {
+                    const force = (repelRadiusSq - distSq) / repelRadiusSq;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Push target
+                    const tx = ox + Math.cos(angle) * force * 30;
+                    const ty = oy + Math.sin(angle) * force * 30;
+                    
+                    posArray[i3] += (tx - px) * 0.1;
+                    posArray[i3 + 1] += (ty - py) * 0.1;
+                } else {
+                    // Spring back to original positions
+                    posArray[i3] += (ox - px) * 0.03;
+                    posArray[i3 + 1] += (oy - py) * 0.03;
+                }
+            }
+            posAttr.needsUpdate = true;
         }
-        
-        positionAttribute.needsUpdate = true;
-        
+
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     }
@@ -683,7 +751,8 @@ function initThreeJS() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // Re-calculate detail if needed, but safe to keep constant for now
+        
+        // Update particle count on resize not strictly needed, but avoids glitches
     });
 }
 
