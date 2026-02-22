@@ -199,6 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 13. SECTION FADE-UP REVEALS
     initSectionReveals();
 
+    // 14. SCROLL PROGRESS BAR
+    initScrollProgress();
+
+    // 15. NAVBAR SCROLL AWARENESS
+    initNavScrollState();
+
+    // 16. BACK TO TOP BUTTON
+    initBackToTop();
+
 });
 
 // ... (Existing Functions) ...
@@ -1065,6 +1074,78 @@ function initSectionReveals() {
         opacity: 0,
         duration: 0.8,
         ease: 'power3.out'
+    });
+}
+
+// ============================================
+// 17. SCROLL PROGRESS BAR
+// ============================================
+function initScrollProgress() {
+    const progressBar = document.querySelector('.scroll-progress');
+    if (!progressBar) return;
+
+    function updateProgress() {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress(); // Initial call
+}
+
+// ============================================
+// 18. NAVBAR SCROLL AWARENESS
+// ============================================
+function initNavScrollState() {
+    const nav = document.querySelector('.nav');
+    if (!nav) return;
+
+    // Desktop only — mobile uses mobile-nav
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+
+    const heroSection = document.querySelector('.hero-section');
+    const triggerPoint = heroSection ? heroSection.offsetHeight * 0.5 : 300;
+
+    function checkScroll() {
+        if (window.scrollY > triggerPoint) {
+            nav.classList.add('scrolled');
+        } else {
+            nav.classList.remove('scrolled');
+        }
+    }
+
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    checkScroll(); // Initial
+}
+
+// ============================================
+// 19. BACK TO TOP BUTTON
+// ============================================
+function initBackToTop() {
+    // Create button
+    const btn = document.createElement('button');
+    btn.className = 'back-to-top';
+    btn.innerHTML = '↑';
+    btn.setAttribute('aria-label', 'Back to top');
+    document.body.appendChild(btn);
+
+    // Show/hide on scroll
+    function toggleBtn() {
+        if (window.scrollY > window.innerHeight) {
+            btn.classList.add('visible');
+        } else {
+            btn.classList.remove('visible');
+        }
+    }
+
+    window.addEventListener('scroll', toggleBtn, { passive: true });
+    toggleBtn();
+
+    // Scroll to top on click
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 }
 
